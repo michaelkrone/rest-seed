@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<project name="restful-scaffold" basedir="." default="all">
+
+	<!-- ============================================	-->
+	<!-- used tasks 									-->
+	<!-- ============================================	-->	
+	<taskdef name="rename" classpath="./tasks" classname="RenameTask" />
+
+	<!-- ============================================	-->
+	<!-- properties files 								-->
+	<!-- ============================================	-->	
+	<property file="./build.properties" />
+
+	<!-- ============================================	-->
+	<!-- build properties								-->
+	<!-- ============================================	-->
+	<property name="build.version" value="${php.version}" />
+	<property name="build.package" value="${phing.project.name}" override="true" />
+	<property name="build.host" value="${host.name}" />
+	<property name="build.phpversion" value="${php.version}" />
+
+	<!-- ============================================	-->
+	<!-- commandline properties							-->
+	<!-- ============================================	-->
+
+	<!-- name of the module to scaffold 				-->
+	<property name="module" value="multi-module" />
+	
+	<!-- ============================================	-->
+	<!-- directories									-->
+	<!-- ============================================	-->
+
+	<!-- project skeletons directory 					-->
+	<property name="scaffold.dir" value="./scaffolds/${module}" />
+
+	<!-- immediate build files directory 				-->
+	<property name="build.dir" value="./build" />
+
+	<!-- distribution directory		 					-->		
+	<property name="dist.dir" value="../dist" />
+
+	<!-- angular app root directory 					-->
+	<property name="angular.appdir" value="${dist.dir}/public/app" />
+
+	<property name="dist.bootstrap" value="${angular.appdir}/components/compass-twitter-bootstrap" />
+
+	<!-- ============================================	-->
+	<!-- sets three properties: build.DSTAMP,			-->
+	<!-- build.TSTAMP, build.TODAY.						-->
+	<!-- ============================================	-->
+	<tstamp prefix="build" />
+
+	<!-- Fileset for all files 							-->
+	<fileset dir="." id="all-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for all build files 					-->
+	<fileset dir="${build.dir}" id="build-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for intermediate files or test 		-->
+	<!-- results inside the project						-->
+	<fileset dir="${dist.dir}" id="intermediate-files">
+		<!-- grunt build results 						-->
+		<include name="public/dist/**" />
+	</fileset>
+
+	<!-- Fileset for dist files 						-->
+	<fileset dir="${dist.dir}" id="dist-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for all .php/.phtml files 				-->
+	<fileset dir="${dist.dir}" id="php-files">
+		<include name="**/*.php" />
+		<include name="**/*.phtml" />
+	</fileset>
+
+	<!-- Fileset for all files that need the group		-->
+	<!-- set to www-data								-->
+	<fileset dir="${dist.dir}" id="www-data">
+		<include name="private/**" />
+		<include name="public/**" />
+		<exclude name=".buildignore" />
+	</fileset>
+
+	<!-- Fileset for all scaffold files 				-->
+	<fileset dir="${scaffold.dir}" id="scaffold-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for used compass style files			-->
+	<fileset dir="${dist.bootstrap}/stylesheets" id="compass-style-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for used compass font files 			-->
+	<fileset dir="${dist.bootstrap}/vendor/assets/fonts" id="compass-font-files">
+		<include name="**" />
+	</fileset>
+
+	<!-- Fileset for used bootstrap javascript files	-->
+	<fileset dir="${dist.bootstrap}/vendor/assets/javascripts" id="compass-javascript-files">
+		<include name="*.js" />
+		<exclude name="bootstrap-all.js" />
+	</fileset>
+
+	<!-- ============================================	-->
+	<!-- (DEFAULT) Target: all 							-->
+	<!-- ============================================	-->
+	<target name="all" description="all target: build all targets" depends="clean-all,copy-skeleton,generate-models">
+
+		<mkdir dir="${dist.dir}" />
+
+		<copy todir="${dist.dir}" preservemode="true">
+			<fileset refid="build-files" />
+		</copy>
+
+		<!-- set group to www-data for all build files -->
+		<chown group="www-data">
+			<fileset refid="www-data" />
+		</chown>
+
+		<phingcall target="check-php" />
+
+		<phingcall target="npm-install" />
+
+		<phingcall target="bower-install" />
+
+		<!-- call grunt-test to ensure the build works 	-->
+		<phingcall target="grunt-test" />
+
+		<!-- clean build including grunt test dist dir 	-->
+		<phingcall target="clean" />
+
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: clean 									-->
+	<!-- ============================================	-->
+	<target name="clean" description="cleans this package (removes all itermediate files or test results)">
+		<delete includeemptydirs="true" verbose="true">
+			<fileset refid="build-files" />
+			<fileset refid="intermediate-files" />
+		</delete>
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: clean-all 								-->
+	<!-- ============================================	-->
+	<target name="clean-all" description="cleans all products of this package" depends="clean">
+		<delete includeemptydirs="true" verbose="true">
+			<fileset refid="dist-files" />
+		</delete>
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: rebuild 								-->
+	<!-- ============================================	-->
+	<target name="rebuild" description="rebuilds this package" depends="clean-all">
+		<phingcall target="all" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: generate-models 	 				 	-->
+	<!-- ============================================	-->
+	<target name="generate-models" description="generate-models target: generate models for the database">
+		<!-- mark directory as phalcon dir 				-->
+		<mkdir dir="${build.dir}/private/common/.phalcon" />
+		<!-- Create model classes	 					-->
+		<exec command="phalcon all-models --get-set --fk --relations --directory=models --config=../config" dir="${build.dir}/private/common" passthru="true" checkreturn="true"/>
+		<!-- unmark directory as phalcon dir 			-->
+		<delete dir="${build.dir}/private/common/.phalcon" verbose="true" failonerror="true" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: npm-install	 	 				 	-->
+	<!-- ============================================	-->
+	<target name="npm-install" description="npm-install target: install node modules">
+		<exec command="npm install" dir="${dist.dir}/public" passthru="true" checkreturn="true" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: bower-install	 	 				 	-->
+	<!-- ============================================	-->
+	<target name="bower-install" description="install bower modules, copy bootstrap files delete bootstrap from the components">
+		<exec command="bower install" dir="${dist.dir}/public" passthru="true" checkreturn="true" />
+		<!-- copy used compass style files				-->
+		<copy todir="${angular.appdir}/styles">
+			<fileset refid="compass-style-files" />
+		</copy>
+		<!-- copy used bootstrap font files				-->
+		<copy todir="${angular.appdir}/styles/fonts">
+			<fileset refid="compass-font-files" />
+		</copy>
+		<!-- copy used bootstrap javascript files		-->
+		<copy todir="${angular.appdir}/components/twitter-bootstrap">
+			<fileset refid="compass-javascript-files" />
+		</copy>
+		<!-- delete unused compass fileset 				-->
+		<delete dir="${dist.bootstrap}" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: grunt			 	 				 	-->
+	<!-- ============================================	-->
+	<target name="grunt" description="grunt target: execute grunt in public dir">
+		<exec command="grunt --force" dir="${dist.dir}/public" passthru="true" checkreturn="true" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: grunt-test		 	 				 	-->
+	<!-- ============================================	-->
+	<target name="grunt-test" description="execute grunt tests in public dir">
+		<exec command="grunt test" dir="${dist.dir}/public" passthru="true" />
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: check-php			 	 				-->
+	<!-- ============================================	-->
+	<target name="check-php" description="check-php target: lint all php files in project">
+		<phplint deprecatedAsError="true">
+			<fileset refid="php-files" />
+		</phplint>
+	</target>
+
+	<!-- ============================================	-->
+	<!-- Target: copy-skeleton 					 		-->
+	<!-- ============================================	-->
+	<target name="copy-skeleton" description="copy-skeleton target: create application skeleton">
+		
+		<!-- Copy application skeleton 					-->
+		<mkdir dir="${build.dir}" />		
+		
+		<!-- copy scaffold files 						-->
+		<copy todir="${build.dir}">
+		
+			<!-- copy scaffold files 					-->
+			<fileset refid="scaffold-files" />
+		
+			<!-- replace property tokens 				-->
+			<filterchain>
+				<replacetokens begintoken="##" endtoken="##">
+					<token key="APP_NAMESPACE" value="${app.namespace}" />
+					<token key="APP_BASE_URI" value="${app.baseURI}" />
+					<token key="APP_METADATA_ADAPTER" value="${app.metadata}" />
+					<token key="APP_COMMON_LIB_NAMESPACE" value="${app.common.namespace}" />
+					<token key="APP_API_MODULE" value="${app.api.module}" />
+					<token key="APP_API_MODULE_NAMESPACE" value="${app.api.module.namespace}" />
+					<token key="APP_VIEW_MODULE" value="${app.view.module}" />
+					<token key="APP_VIEW_MODULE_NAMESPACE" value="${app.view.namespace}" />
+					<token key="APP_DATABASE_ADAPTER" value="${db.adapter}" />
+					<token key="APP_DATABASE_HOST" value="${db.host}" />
+					<token key="APP_DATABASE_NAME" value="${db.name}" />
+					<token key="APP_DATABASE_USER" value="${db.username}" />
+					<token key="APP_DATABASE_PASSWORD" value="${db.password}" />
+					<token key="APP_DATABASE_PERSISTENT" value="${db.persistent}" />
+					<token key="APP_ANGULAR_APP_NAME" value="${app.angular.name}" />
+					<token key="BUILD_TIMESTAMP" value="${build.DSTAMP}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+		<!-- rename the application directories 		-->
+		<rename src="${build.dir}/private/api" dest="${build.dir}/private/${app.api.module}" />
+		<rename src="${build.dir}/private/view" dest="${build.dir}/private/${app.api.module}" />
+
+	</target>
+</project>
