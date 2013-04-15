@@ -23,7 +23,7 @@
 	<property name="build.dir" value="./build" />
 
 	<!-- distribution directory		 					-->		
-	<property name="dist.dir" value="../dist" />
+	<property name="dist.dir" value="./dist" />
 
 	<!-- angular app root directory 					-->
 	<property name="angular.appdir" value="${dist.dir}/public/app" />
@@ -91,7 +91,7 @@
 	<!-- ============================================	-->
 	<!-- (DEFAULT) Target: all 							-->
 	<!-- ============================================	-->
-	<target name="all" description="all target: build all targets" depends="generate-models">
+	<target name="all" description="all target: build all targets" depends="copy-to-build,grunt">
 
 		<mkdir dir="${dist.dir}" />
 
@@ -106,15 +106,22 @@
 
 		<phingcall target="check-php" />
 
-		<phingcall target="npm-install" />
-
-		<phingcall target="bower-install" />
-
 		<!-- call grunt-test to ensure the build works 	-->
 		<phingcall target="grunt-test" />
 
 		<!-- clean build including grunt test dist dir 	-->
 		<phingcall target="clean" />
+
+	</target>
+
+	<target name="copy-to-build" description="copy all neede files to the intermediate directory">
+		<!-- Copy application skeleton 					-->
+		<mkdir dir="${build.dir}" />		
+		
+		<!-- copy build files 							-->
+		<copy todir="${build.dir}">
+			<fileset refid="all-files" />
+		</copy>
 
 	</target>
 
