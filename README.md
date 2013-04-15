@@ -1,1 +1,1 @@
-Phing scaffold
+# Phing scaffold for RESTfull application
