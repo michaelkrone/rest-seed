@@ -11,6 +11,7 @@ module.exports = function (grunt) {
   // configurable paths
   var yeomanConfig = {
     app: 'app',
+    // privateDir: '../private', // '<%= yeoman.privateDir %>/##APP_VIEW_MODULE##/views/layouts/index.phtml'
     dist: 'dist'
   };
 
