@@ -125,7 +125,12 @@ try {
 
 	$di->setShared('modelsManager', function() {
 		return new \Phalcon\Mvc\Model\Manager();
-	});	
+	});
+
+	/**
+	 * Set output modes
+	 */
+	\Phalcon\Tag::setDoctype(\Phalcon\Tag::HTML5);
 
 	/**
 	 * Error handler
@@ -142,9 +147,6 @@ try {
 		return true;
 	});
 
-	/**
-	 * Handle the request
-	 */
 	$application = new \Phalcon\Mvc\Application();
 	$application->setDI($di);
 
@@ -154,10 +156,8 @@ try {
 	$application->registerModules(require $config->application->configDir . '/modules.php');
 
 	/**
-	 * Set output modes
+	 * Handle the request
 	 */
-	\Phalcon\Tag::setDoctype(\Phalcon\Tag::HTML5);
-
 	echo $application->handle()->getContent();
 
 } catch (\Phalcon\Exception $e) {

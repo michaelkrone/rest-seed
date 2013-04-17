@@ -1,6 +1,8 @@
 <?php
 
 $config = array(
+
+	/* Common database settings */
 	'database' => array(
 		'adapter'  		=> '##APP_DATABASE_ADAPTER##',
 		'host'     		=> '##APP_DATABASE_HOST##',
@@ -10,6 +12,8 @@ $config = array(
 		'persistent' 	=> ##APP_DATABASE_PERSISTENT##,
 		'charset'   	=> 'utf8'
 	),
+
+	/* Application directories */
 	'application' => array(
 		'baseDir'     	=> __DIR__ . '/../../../',
 		'cacheDir'     	=> __DIR__ . '/../../var/cache/',
@@ -22,6 +26,8 @@ $config = array(
 		'controllersDir'    => __DIR__ . '/../lib/controllers/',
 		'baseUri'       => '##APP_BASE_URI##'
 	),
+
+	/* Models configuration */
 	'models' => array(
 		'metadata' => array(
 			'adapter' => '##APP_METADATA_ADAPTER##'

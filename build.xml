@@ -35,10 +35,10 @@
 	<property name="scaffold.dir" value="./scaffolds/${module}" />
 
 	<!-- immediate build files directory 				-->
-	<property name="build.dir" value="./build" />
+	<property name="build.dir" value="./tmp" />
 
 	<!-- distribution directory		 					-->		
-	<property name="dist.dir" value="../dist" />
+	<property name="dist.dir" value="./build" />
 
 	<!-- angular app root directory 					-->
 	<property name="angular.appdir" value="${dist.dir}/public/app" />
@@ -115,7 +115,7 @@
 
 		<mkdir dir="${dist.dir}" />
 
-		<copy todir="${dist.dir}" preservemode="true">
+		<copy todir="${dist.dir}" preservemode="true" includeemptydirs="true">
 			<fileset refid="build-files" />
 		</copy>
 
