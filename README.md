@@ -1,5 +1,8 @@
 # Phing scaffold for RESTful API application
 
+*This project is outdated and will not be maintained anymore.*
+Please use [generator-phalcon](https://github.com/michaelkrone/generator-phalcon) for generating applications.
+
 This seed project creates a skeleton for a Phalcon multi module application including AngularJS
 for the client side.
 
